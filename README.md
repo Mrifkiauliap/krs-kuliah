@@ -1,12 +1,11 @@
-# KRS UNSAM Viewer
+# KRS Viewer
 
-Aplikasi web modern untuk melihat, merencanakan, dan menganalisis jadwal akademik mahasiswa Universitas Samudra (UNSAM).
+Aplikasi web untuk melihat, merencanakan, dan menganalisis jadwal akademik mahasiswa.
 
 Dibuat menggunakan Python dan Streamlit, aplikasi ini memudahkan mahasiswa dalam menyusun KRS dengan fitur deteksi bentrok otomatis dan asisten AI cerdas.
 
 ## Fitur Unggulan
 
-- Login SSO Aman: Masuk menggunakan akun portal akademik UNSAM.
 - Validasi Cerdas: Pengecekan otomatis batas SKS dan kuota kelas.
 - Deteksi Konflik: Peringatan visual jika ada jadwal yang bertabrakan.
 - Jadwal Visual: Tampilan grid mingguan yang mudah dibaca.
