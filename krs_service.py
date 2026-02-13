@@ -16,11 +16,11 @@ def build_dataframe(data: list[dict], jam_desc: bool = False) -> pd.DataFrame:
     df = pd.DataFrame(data)
 
     df["hari_order"] = df["hari"].str.lower().map(HARI_ORDER)
-    df["jam_mulai"] = pd.to_datetime(df["jam_mulai"])
+    df["jam_mulai"] = pd.to_datetime(df["jam_mulai"], format="mixed")
 
     # Parse jam_akhir
     if "jam_akhir" in df.columns:
-        df["jam_akhir"] = pd.to_datetime(df["jam_akhir"])
+        df["jam_akhir"] = pd.to_datetime(df["jam_akhir"], format="mixed")
 
     # Ensure sks is numeric
     if "sks_mata_kuliah" in df.columns:
