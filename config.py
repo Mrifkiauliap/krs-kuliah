@@ -4,7 +4,7 @@
 LOGIN_PAGE = "https://sso.unsam.ac.id/realms/Production/protocol/openid-connect/auth"
 CLIENT_ID = "mahasiswa"
 REDIRECT_URI = "https://mahasiswa.unsam.ac.id/home"
-KRS_URL = "https://mahasiswa.unsam.ac.id/krs/datatable/20252"
+KRS_URL = "https://mahasiswa.unsam.ac.id/krs/datatable/20261"
 
 MAX_SKS = 24
 

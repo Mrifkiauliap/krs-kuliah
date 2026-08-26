@@ -25,10 +25,16 @@ def build_catalog_summary(df: pd.DataFrame) -> str:
     if df.empty:
         return ""
 
-    lines = []
-    grouped = df.groupby(["nama_mata_kuliah", "kode_mata_kuliah"], sort=True)
+    # Kolom kode opsional
+    has_kode = "kode_mata_kuliah" in df.columns
+    keys = ["nama_mata_kuliah"] + (["kode_mata_kuliah"] if has_kode else [])
 
-    for (nama, kode), group in grouped:
+    lines = []
+    grouped = df.groupby(keys, sort=True)
+
+    for keys_vals, group in grouped:
+        nama = keys_vals[0]
+        kode = keys_vals[1] if has_kode else ""
         sks = group["sks_mata_kuliah"].iloc[0] if "sks_mata_kuliah" in group.columns else "?"
 
         parts = []

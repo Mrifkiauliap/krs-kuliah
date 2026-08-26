@@ -52,6 +52,12 @@ Catatan: Setiap pengguna baru biasanya mendapatkan saldo gratis yang cukup untuk
 
 4. Login menggunakan username dan password portal akademik (SSO) kamu.
 
+## Menjalankan Tes (Opsional)
+
+Untuk memastikan pipeline data tidak crash pada data yang kotor/berubah:
+
+   python test_smoke.py
+
 Selamat merencanakan semestermu!
 
 ## ⚠️ PENTING: Disclaimer

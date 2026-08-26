@@ -6,17 +6,38 @@ from config import KRS_URL, HARI_ORDER
 
 def fetch_krs(session: requests.Session) -> list[dict]:
     """Fetch raw KRS data from the mahasiswa API."""
-    r = session.get(KRS_URL)
+    r = session.get(KRS_URL, timeout=30)
     r.raise_for_status()
-    return r.json()["data"]
+
+    try:
+        payload = r.json()
+    except ValueError:
+        raise Exception("Respons dari server bukan JSON. Sesi mungkin kadaluarsa, silakan login ulang.")
+
+    data = payload.get("data")
+    if not isinstance(data, list):
+        raise Exception("Format data KRS tidak dikenali. API mungkin berubah.")
+
+    return data
 
 
 def build_dataframe(data: list[dict], jam_desc: bool = False) -> pd.DataFrame:
     """Convert raw KRS data into a sorted DataFrame."""
+    if not data:
+        return pd.DataFrame()
+
     df = pd.DataFrame(data)
 
-    df["hari_order"] = df["hari"].str.lower().map(HARI_ORDER)
-    df["jam_mulai"] = pd.to_datetime(df["jam_mulai"], format="mixed")
+    # Kolom wajib minimum
+    required = ["hari", "jam_mulai"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise Exception(f"Data KRS tidak lengkap — kolom hilang: {', '.join(missing)}")
+
+    # hari harus string dulu — API bisa kirim angka (mis. 1/2) yang bikin .str crash
+    df["hari"] = df["hari"].astype(str).str.strip()
+    df["hari_order"] = df["hari"].str.lower().map(HARI_ORDER).fillna(99)
+    df["jam_mulai"] = pd.to_datetime(df["jam_mulai"], format="mixed", errors="coerce")
 
     # Parse jam_akhir
     if "jam_akhir" in df.columns:
@@ -48,24 +69,25 @@ def export_excel(df: pd.DataFrame) -> bytes:
 
 def search_dataframe(df: pd.DataFrame, query: str) -> pd.DataFrame:
     """Filter DataFrame rows that contain the search query (case-insensitive)."""
-    if not query:
+    if not query or df.empty:
         return df
     q = query.lower()
-    # Vectorized: concat all string columns and check
-    mask = df.astype(str).apply(lambda col: col.str.lower()).agg(' '.join, axis=1).str.contains(q, na=False)
-    return df[mask]
+    # Gabungkan semua sel per baris jadi satu string.
+    # str() eksplisit: aman untuk NaN, NaT, float, datetime (yang bikin join crash).
+    text = df.apply(lambda row: " ".join(str(v) for v in row).lower(), axis=1)
+    return df[text.str.contains(q, na=False)]
 
 
 def filter_krs_data(df: pd.DataFrame, semesters: list = None, dosens: list = None) -> pd.DataFrame:
     """Filter DataFrame by specific Semester and Dosen values."""
     filtered = df.copy()
 
-    if semesters:
+    if semesters and "semester" in filtered.columns:
         # Convert semester column to string just in case
         filtered = filtered[filtered["semester"].astype(str).isin(semesters)]
 
-    if dosens:
-        filtered = filtered[filtered["nama_dosen"].isin(dosens)]
+    if dosens and "nama_dosen" in filtered.columns:
+        filtered = filtered[filtered["nama_dosen"].astype(str).isin(dosens)]
 
     return filtered
 

@@ -143,13 +143,17 @@ def render_timetable_html(df: pd.DataFrame) -> str:
             # Content
             nama = row.get('nama_mata_kuliah', 'Unknown')
             kelas = row.get('nama_kelas_kuliah', '')
-            ruang = row.get('ruang', '') # if avail
-            time_str = f"{start_time.strftime('%H:%M')} - {end_time.strftime('%H:%M')}"
+            ruang = str(row.get('ruang', '')) if pd.notna(row.get('ruang')) else ''
+            dosen = str(row.get('nama_dosen', '')) if pd.notna(row.get('nama_dosen')) else ''
+            time_str = f"{start_time.strftime('%H:%M')}–{end_time.strftime('%H:%M')}"
+            room_str = f" • {ruang}" if ruang else ""
+            dosen_str = f" • {dosen}" if dosen else ""
 
             html.append(f"""
             <div class="tt-event" style="{style}">
-                <div class="tt-event-title">{nama}</div>
-                <div class="tt-event-meta">{kelas} • {time_str}</div>
+                <div class="tt-event-title">{nama} <span style="font-weight:400">{kelas}</span></div>
+                <div class="tt-event-meta">{time_str}{room_str}</div>
+                <div class="tt-event-meta">{dosen_str}</div>
             </div>
             """)
 

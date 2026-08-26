@@ -175,8 +175,20 @@ with st.sidebar:
 
     st.write("")
     if st.button("🔴 Hard Reset", use_container_width=True, help="Hapus SEMUA data & logout"):
-        hard_reset()
-        st.rerun()
+        st.session_state["confirm_reset"] = True
+
+    if st.session_state.get("confirm_reset"):
+        st.warning("⚠️ Tindakan ini menghapus SEMUA data (pilihan & chat) secara permanen.")
+        col_yes, col_no = st.columns(2)
+        with col_yes:
+            if st.button("✅ Ya, Hapus Semua", use_container_width=True):
+                st.session_state["confirm_reset"] = False
+                hard_reset()
+                st.rerun()
+        with col_no:
+            if st.button("❌ Batal", use_container_width=True):
+                st.session_state["confirm_reset"] = False
+                st.rerun()
 
 # ================= PAGES =================
 if page == "🏠 Pilih KRS":
