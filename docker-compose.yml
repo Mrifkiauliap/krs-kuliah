@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  krs-viewer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: krs-viewer-app
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount database SQLite agar data session tetap persisten di host
+      - ./sessions.sqlite:/app/sessions.sqlite
+      # Mount file .env untuk konfigurasi API Key AI Assistant
+      - ./.env:/app/.env
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1

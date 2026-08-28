@@ -1,0 +1,17 @@
+.git
+.gitignore
+.venv
+venv
+ENV
+.env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.db
+sessions.sqlite
+.streamlit
+README.md
+Dockerfile
+docker-compose.yml
+pembelajaran.md
