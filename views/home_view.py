@@ -29,7 +29,7 @@ def render_home_view(df: pd.DataFrame):
     c1.metric("Mata Kuliah", f"{total_mk}")
     delta_color = "normal" if total_sks <= MAX_SKS else "inverse"
     c2.metric("Total SKS", f"{total_sks}/{MAX_SKS}", delta=None, delta_color=delta_color)
-    c3.metric("Sisa Kuota SKS", f"{MAX_SKS - total_sks}")
+    c3.metric("Sisa Kuota SKS", f"{max(MAX_SKS - total_sks, 0)}")
     with c4:
         st.progress(min(total_sks / MAX_SKS, 1.0))
         if total_mk > 0 and st.button("🔄 Reset Pilihan", use_container_width=True):
@@ -39,6 +39,12 @@ def render_home_view(df: pd.DataFrame):
                     del st.session_state[key]
             save_session()
             st.rerun()
+
+    # Peringatan over-SKS
+    if total_sks > MAX_SKS:
+        st.error(f"⚠️ Total SKS melebihi batas {MAX_SKS}! Hapus {total_sks - MAX_SKS} SKS atau lebih.")
+    elif total_mk == 0:
+        st.info("Belum ada mata kuliah dipilih. Centang kelas di daftar bawah.")
 
     st.divider()
 
@@ -151,12 +157,13 @@ def render_home_view(df: pd.DataFrame):
         kelas = row.get('nama_kelas_kuliah', '-')
         sem = row.get('semester', '-')
         dosen = row.get('nama_dosen', '-')
-        hari = row.get('hari', '').capitalize()
+        hari = str(row.get('hari', '')).capitalize()
         jam_start = row["jam_mulai"].strftime("%H:%M") if pd.notna(row["jam_mulai"]) else "?"
         jam_end = row["jam_akhir"].strftime("%H:%M") if "jam_akhir" in row.index and pd.notna(row["jam_akhir"]) else "?"
 
-        kuota = int(row.get('kuota', 0))
-        jumlah = int(row.get('jumlah', 0))
+        # None-safe: int(None) crash
+        kuota = int(row.get('kuota') or 0)
+        jumlah = int(row.get('jumlah') or 0)
         sisa = kuota - jumlah
         if sisa <= 0: quota_badge = "<span style='color:#f85149; font-weight:bold'>PENUH</span>"
         elif sisa <= 5: quota_badge = f"<span style='color:#d29922; font-weight:bold'>Sisa {sisa}</span>"
@@ -176,6 +183,21 @@ def render_home_view(df: pd.DataFrame):
 
         display_df = selected_df_full.copy()
         display_df['Mata Kuliah'] = display_df.apply(lambda x: f"{x.get('nama_mata_kuliah','')} ({x.get('kode_mata_kuliah','')})\nSMT {x.get('semester','')} - KLS {x.get('nama_kelas_kuliah','')}", axis=1)
-        display_df['Jadwal'] = display_df.apply(lambda x: f"{x.get('hari','').capitalize()} {x['jam_mulai'].strftime('%H:%M')}-{x['jam_akhir'].strftime('%H:%M') if pd.notna(x['jam_akhir']) else ''}", axis=1)
-        display_df['SKS'] = display_df['sks_mata_kuliah']
-        st.dataframe(display_df[['Mata Kuliah', 'SKS', 'Jadwal']], use_container_width=True, hide_index=True)
+        jam_akhir_ok = "jam_akhir" in display_df.columns
+        display_df['Jadwal'] = display_df.apply(lambda x: f"{str(x.get('hari','')).capitalize()} {x['jam_mulai'].strftime('%H:%M')}-{x['jam_akhir'].strftime('%H:%M') if jam_akhir_ok and pd.notna(x.get('jam_akhir')) else ''}", axis=1)
+        has_sks = "sks_mata_kuliah" in display_df.columns
+        display_df['SKS'] = display_df['sks_mata_kuliah'] if has_sks else 0
+        show_cols = ['Mata Kuliah', 'SKS', 'Jadwal'] if has_sks else ['Mata Kuliah', 'Jadwal']
+        st.dataframe(display_df[show_cols], use_container_width=True, hide_index=True)
+
+        # ── Beban SKS per hari (agar jadwal seimbang) ──
+        st.markdown("##### ⚖️ Beban SKS per Hari")
+        hari_order = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"]
+        per_hari = display_df.groupby(display_df['hari'].astype(str).str.capitalize())['SKS'].sum().reindex(hari_order).dropna()
+        if not per_hari.empty:
+            chart_data = per_hari.reset_index()
+            chart_data.columns = ["Hari", "SKS"]
+            chart_data = chart_data.set_index("Hari")
+            st.bar_chart(chart_data)
+            cap = per_hari.max()
+            st.caption(f"Hari terpadat: **{per_hari.idxmax()}** ({int(cap)} SKS)" if cap else "")

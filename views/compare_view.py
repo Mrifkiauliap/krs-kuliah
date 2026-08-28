@@ -33,7 +33,10 @@ def _collect_busy_slots(comparison_data: list, days: list, start_hour: int, end_
             start_min = (s_time.hour - start_hour) * 60 + s_time.minute
             end_min = (e_time.hour - start_hour) * 60 + e_time.minute
 
-            for m in range(start_min, end_min, SLOT_MINUTES):
+            # Clamp agar jadwal lewat batas tidak overflow ke slot tak valid
+            end_min = min(end_min, (end_hour - start_hour) * 60)
+
+            for m in range(max(start_min, 0), end_min, SLOT_MINUTES):
                 busy.add((d_idx, m // SLOT_MINUTES))
 
     return busy
@@ -202,7 +205,11 @@ def render_compare_view(df: pd.DataFrame):
     st.divider()
     st.markdown("### 🤝 Waktu Kosong Bersama")
 
-    days = DAYS[:5]  # Mon-Fri
+    days = DAYS[:5]  # Senin-Jumat untuk grup belajar
+    # Kalau semua orang punya jadwal Sabtu, sertakan Sabtu juga
+    if any(item["df"].get("hari", pd.Series(dtype=str)).str.contains("sabtu", case=False).any() for item in comparison_data if not item["df"].empty):
+        days = DAYS[:6]  # + Sabtu
+
     busy_slots = _collect_busy_slots(comparison_data, days, SCHEDULE_START_HOUR, SCHEDULE_END_HOUR)
     free_ranges = _find_free_ranges(busy_slots, days, SCHEDULE_START_HOUR, SCHEDULE_END_HOUR)
 
